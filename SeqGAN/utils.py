@@ -126,7 +126,7 @@ class GeneratorPretrainingGenerator(Sequence):
         print(y_true_words)
         >>> I have a <UNK> </S> <PAD> <PAD> ... <PAD>
     '''
-    def __init__(self, path, B, Z=26, min_count=1, shuffle=True):
+    def __init__(self, path, B, min_count=1, shuffle=True):
         self.PAD = 0
         self.BOS = 1
         self.EOS = 2
@@ -137,7 +137,6 @@ class GeneratorPretrainingGenerator(Sequence):
         self.EOS_TOKEN = '</S>'
         self.path = path
         self.B = B
-        self.Z = Z
         self.min_count = min_count
 
         default_dict = {
@@ -154,8 +153,8 @@ class GeneratorPretrainingGenerator(Sequence):
         self.id2word = self.vocab.id2word
         self.raw_vocab = self.vocab.raw_vocab
         self.V = len(self.vocab.word2id)
-
-        self.n_data = sum(1 for line in open(path, encoding='utf-8'))
+        with open(path, 'r', encoding='utf-8') as f:
+            self.n_data = sum(1 for line in f)            
         self.shuffle = shuffle
         self.idx = 0
         self.len = self.__len__()
@@ -177,7 +176,7 @@ class GeneratorPretrainingGenerator(Sequence):
                 max_length is the max length of sequence in the batch.
                 if length smaller than max_length, the data will be padded.
         '''
-        x, y_true = []
+        x, y_true = [], []
         start = idx * self.B + 1
         end = (idx + 1) * self.B + 1
         max_length = 0
@@ -199,7 +198,7 @@ class GeneratorPretrainingGenerator(Sequence):
 
             ids_y_true.extend(ids)
             ids_y_true.append(self.EOS) # ex. [8, 10, 6, 3, EOS]
-            dec_x.append(ids_y_true)
+            y_true.append(ids_y_true)
 
             max_length = max(max_length, len(ids_x))
 
@@ -214,13 +213,13 @@ class GeneratorPretrainingGenerator(Sequence):
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def next(self):
         if self.idx >= self.len:
             self.reset()
             raise StopIteration
-        data = self.__getitem__(self.idx)
+        x, y_true = self.__getitem__(self.idx)
         self.idx += 1
-        return data
+        return x, y_true
 
     def reset(self):
         self.idx = 0
