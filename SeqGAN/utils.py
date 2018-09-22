@@ -205,10 +205,10 @@ class GeneratorPretrainingGenerator(Sequence):
 
         if self.T is not None:
             max_length = self.T
-        x = [pad_seq(sen, max_length) for sen in x]
+        x = [pad_seq(sen, max_length) for sen in x[:max_length]]
         x = np.array(x, dtype=np.int32)
 
-        y_true = [pad_seq(sen, max_length) for sen in y_true]
+        y_true = [pad_seq(sen, max_length) for sen in y_true[:max_length]]
         y_true = np.array(y_true, dtype=np.int32)
 
         return (x, y_true)
