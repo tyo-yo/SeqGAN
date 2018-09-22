@@ -126,7 +126,7 @@ class GeneratorPretrainingGenerator(Sequence):
         print(y_true_words)
         >>> I have a <UNK> </S> <PAD> <PAD> ... <PAD>
     '''
-    def __init__(self, path, B, min_count=1, shuffle=True):
+    def __init__(self, path, B, T=40, min_count=1, shuffle=True):
         self.PAD = 0
         self.BOS = 1
         self.EOS = 2
@@ -137,6 +137,7 @@ class GeneratorPretrainingGenerator(Sequence):
         self.EOS_TOKEN = '</S>'
         self.path = path
         self.B = B
+        self.T = T
         self.min_count = min_count
 
         default_dict = {
@@ -154,7 +155,7 @@ class GeneratorPretrainingGenerator(Sequence):
         self.raw_vocab = self.vocab.raw_vocab
         self.V = len(self.vocab.word2id)
         with open(path, 'r', encoding='utf-8') as f:
-            self.n_data = sum(1 for line in f)            
+            self.n_data = sum(1 for line in f)
         self.shuffle = shuffle
         self.idx = 0
         self.len = self.__len__()
@@ -202,6 +203,8 @@ class GeneratorPretrainingGenerator(Sequence):
 
             max_length = max(max_length, len(ids_x))
 
+        if self.T is not None:
+            max_length = self.T
         x = [pad_seq(sen, max_length) for sen in x]
         x = np.array(x, dtype=np.int32)
 
