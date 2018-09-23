@@ -335,16 +335,12 @@ class DiscriminatorGenerator(Sequence):
         end = (idx + 1) * self.B + 1
         max_length = 0
         for i in range(start, end):
-            if self.shuffle:
-                idx = self.shuffled_indices[i]
-            else:
-                idx = i
-
+            idx = self.indicies[i]
             is_pos = 1
             if idx < 0:
                 is_pos = 0
                 idx = -1 * idx
-            idx = idx - 1   # from 1 origin to 0 origin
+            idx = idx - 1
 
             if is_pos == 1:
                 sentence = linecache.getline(self.path_pos, idx) # str
@@ -386,11 +382,11 @@ class DiscriminatorGenerator(Sequence):
 
     def reset(self):
         self.idx = 0
+        pos_indices = np.arange(start=1, stop=self.n_data_pos+1)
+        neg_indices = -1 * np.arange(start=1, stop=self.n_data_neg+1)
+        self.indicies = np.concatenate([pos_indices, neg_indices])
         if self.shuffle:
-            pos_indices = np.arange(start=1, stop=self.n_data_pos+1)
-            neg_indices = -1 * np.arange(start=1, stop=self.n_data_neg+1)
-            self.shuffled_indices = np.concatenate([pos_indices, neg_indices])
-            random.shuffle(self.shuffled_indices)
+            random.shuffle(self.indicies)
 
     def on_epoch_end(self):
         self.reset()
