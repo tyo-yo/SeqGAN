@@ -5,3 +5,4 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from SeqGAN.utils import GeneratorPretrainingGenerator
+from SeqGAN.models import GeneratorPretraining
