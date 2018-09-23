@@ -27,7 +27,7 @@ def GeneratorPretraining(V, E, H):
     generator_pretraining = Model(input, out)
     return generator_pretraining
 
-def Disciriminator(V, E, filter_sizes, num_filters, dropout):
+def Discriminator(V, E, filter_sizes, num_filters, dropout):
     '''
     Disciriminator model.
     # Arguments:
