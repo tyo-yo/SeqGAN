@@ -14,6 +14,8 @@ class TestGeneratorPretraining(unittest.TestCase):
             shuffle=False)
         model = GeneratorPretraining(gen.V, 2, 3)
         model.compile('adam','categorical_crossentropy')
+        print('Model: GeneratorPretraining')
+        model.summary()
         model.fit_generator(
             gen,
             steps_per_epoch=3,
