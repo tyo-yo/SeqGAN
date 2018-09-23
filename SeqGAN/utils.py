@@ -205,11 +205,18 @@ class GeneratorPretrainingGenerator(Sequence):
 
         if self.T is not None:
             max_length = self.T
-        x = [pad_seq(sen, max_length) for sen in x[:max_length]]
+
+        for i, ids in enumerate(x):
+            x[i] = x[i][:max_length]
+        for i, ids in enumerate(y_true):
+            y_true[i] = y_true[i][:max_length]
+
+        x = [pad_seq(sen, max_length) for sen in x]
         x = np.array(x, dtype=np.int32)
 
-        y_true = [pad_seq(sen, max_length) for sen in y_true[:max_length]]
+        y_true = [pad_seq(sen, max_length) for sen in y_true]
         y_true = np.array(y_true, dtype=np.int32)
+        y_true = to_categorical(y_true, num_classes=self.V)
 
         return (x, y_true)
 
@@ -222,7 +229,7 @@ class GeneratorPretrainingGenerator(Sequence):
             raise StopIteration
         x, y_true = self.__getitem__(self.idx)
         self.idx += 1
-        return x, y_true
+        return (x, y_true)
 
     def reset(self):
         self.idx = 0

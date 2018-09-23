@@ -21,10 +21,10 @@ class TestGeneratorPretrainingGenerator(unittest.TestCase):
         actual_text = [gen.id2word[id] for id in x[0][:length]]
         self.sub_test(actual_text, expected_text, msg='x text test')
 
-        expected_text = ['だから', 'ここ', 'でも', 'ただ', '先生', 'と', '書く', 'だけ', 'で', '本名', 'は', '打ち明け', 'ない', '。', '</S>']
+        expected_text = ['<S>','だから', 'ここ', 'でも', 'ただ', '先生', 'と', '書く', 'だけ', 'で', '本名', 'は', '打ち明け', 'ない', '。', '</S>']
         expected_ids = [gen.word2id[word] for word in expected_text]
-        actual_ids = y_true[1][:len(expected_ids)]
+        actual_ids = x[1][:len(expected_ids)]
         result = (actual_ids == expected_ids).all()
-        self.assertTrue(result, msg='y_true ids test')
+        self.assertTrue(result, msg='x ids test')
 
         self.sub_test(gen.len, 4267//8)
