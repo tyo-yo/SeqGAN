@@ -1,5 +1,4 @@
 from .context import unittest, os, GeneratorPretrainingGenerator, GeneratorPretraining
-# from tests.context import unittest, os, GeneratorPretrainingGenerator, GeneratorPretraining
 
 top = os.getcwd()
 
