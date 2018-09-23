@@ -13,15 +13,12 @@ class TestGeneratorPretraining(unittest.TestCase):
             os.path.join(top, 'data', 'kokoro_parsed.txt'),
             B=32, T=40,
             shuffle=False)
-        model = GeneratorPretraining(gen.V, 5, 3)
+        model = GeneratorPretraining(gen.V, 2, 3)
         model.compile('adam','categorical_crossentropy')
         model.fit_generator(
             gen,
-            steps_per_epoch=3)
-            # validation_data=gen,
-            # validation_steps=2)
-        pred = model.predict_generator(gen, steps=4)
-        pred.shape
-        model.summary()
-        x, y_true = gen.next()
-        y_true.shape
+            steps_per_epoch=3,
+            validation_data=gen,
+            validation_steps=2)
+        pred = model.predict_generator(gen, steps=1)
+        self.sub_test(pred.shape, (32, 40, gen.V), msg='output shape test')
