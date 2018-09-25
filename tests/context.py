@@ -6,4 +6,5 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from SeqGAN.utils import GeneratorPretrainingGenerator, DiscriminatorGenerator
 from SeqGAN.models import GeneratorPretraining, Discriminator, Generator
+from SeqGAN.rl import Agent
 import numpy as np
