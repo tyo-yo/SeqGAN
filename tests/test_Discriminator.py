@@ -7,7 +7,7 @@ class TestDiscriminator(unittest.TestCase):
         with self.subTest(actual=actual, expected=expected):
             self.assertEqual(actual, expected, msg=msg)
 
-    def test_generator_pretraining_generator(self):
+    def test_discriminator(self):
         filter_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20] # filter sizes for CNNs
         num_filters = [10, 20, 20, 20, 20, 10, 10, 10, 10, 10, 16, 16] # num of filters for CNNs
         gen = DiscriminatorGenerator(
