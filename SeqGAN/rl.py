@@ -38,11 +38,13 @@ class Agent(object):
             epsilon: float, 0 <= epsilon <= 1,
                 if epsilon is 1, the Agent will act completely random.
         '''
+        a = None
         if np.random.rand() <= epsilon:
             a = np.random.randint(low=0, high=self.num_actions, size=(self.B, 1))
         else:
             probs = self.evaluate(state)
-            a = self.sampling(prob)
+            a = self.sampling(probs)
+        return a
 
     def sampling(self, probs):
         '''
@@ -51,9 +53,10 @@ class Agent(object):
         # Returns:
             sample: numpy array, dtype=int, shape = (B, 1)
         '''
-        a = np.zeros((self.num_actions, 1), dtype=np.int32)
+        assert probs.shape[0] == self.B, 'probs shape should be same as B'
+        a = np.zeros((self.B, 1), dtype=np.int32)
 
-        for i in range(B):
+        for i in range(self.B):
             p = probs[i]
             a[i, 0] = np.random.choice(self.num_actions, p=p)
         return a
