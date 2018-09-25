@@ -26,7 +26,7 @@ class TestGenerator(unittest.TestCase):
         pred = model.predict(x)
 
         self.sub_test(pred.shape, (B, gen.V), msg='output shape test')
-        self.assertAlmostEqual(B, np.sum(pred), places=3, msg='softmax test')
+        self.assertAlmostEqual(B, np.sum(pred), places=1, msg='softmax test')
 
         for i in range(100):
             pred2 = model.predict(x)
