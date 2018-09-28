@@ -60,3 +60,15 @@ class Agent(object):
             p = probs[i]
             a[i, 0] = np.random.choice(self.num_actions, p=p)
         return a
+
+class Environment(object):
+    def __init__(self,):
+
+
+    def reset(self):
+
+
+    def step(self):
+
+
+    def render(self):
