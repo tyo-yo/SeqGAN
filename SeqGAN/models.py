@@ -27,11 +27,10 @@ def GeneratorPretraining(V, E, H):
     generator_pretraining = Model(input, out)
     return generator_pretraining
 
-def Generator(B, V, E, H):
+def Generator(V, E, H):
     '''
     Create stateful Generator, which generate a next word.
     # Arguments:
-        B: int, batch_size
         V: int, Vocabrary size
         E: int, Embedding size
         H: int, LSTM hidden size
@@ -40,11 +39,14 @@ def Generator(B, V, E, H):
             input: word id, shape = (B, 1)
             output: next word probability, shape = (B, V)
     '''
-    input = Input(batch_shape=(B, 1), dtype='int32', name='Input') # (B, 1)
+    input = Input(shape=(1,), dtype='int32', name='Input') # (B, 1)
+    input_h = Input(shape=(H,), name='Input_h')
+    input_c = Input(shape=(H,), name='Input_c')
     out = Embedding(V, E, mask_zero=True, name='Embedding')(input) # (B, 1, E)
-    out = LSTM(H, stateful=True, name='LSTM')(out)  # (B, H)
-    out = Dense(V, activation='softmax', name='Dense')(out)    # (B, V)
-    generator = Model(input, out)
+    out, h, c = LSTM(H, return_state=True, name='LSTM')(out,
+        initial_state=[input_h, input_c])  # (B, H)
+    out = Dense(V, activation='softmax', name='Dense_softmax')(out)    # (B, V)
+    generator = Model([input, input_h, input_c], [out, h, c])
     return generator
 
 def Discriminator(V, E, filter_sizes, num_filters, dropout):
@@ -59,7 +61,7 @@ def Discriminator(V, E, filter_sizes, num_filters, dropout):
     # Returns:
         discriminator: keras model
             input: word ids, shape = (B, T)
-            output: probability of true data or not, shape = (B,)
+            output: probability of true data or not, shape = (B, 1)
     '''
     input = Input(shape=(None,), dtype='int32', name='Input')   # (B, T)
     out = Embedding(V, E, name='Embedding')(input)  # (B, T, E)
