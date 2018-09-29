@@ -8,12 +8,17 @@ class TestAgent(unittest.TestCase):
             self.assertEqual(actual, expected, msg=msg)
 
     def test_generator(self):
-        B, V, E, H = 32, 6000, 2, 3
+        B, V, E, H, T = 32, 6000, 2, 3, 30
         agent = Agent(B, V, E, H)
 
         BOS = 1
-        x = [BOS] * B
-        x = np.array(x).reshape(B, 1)
+        state = np.zeros([B, T], dtype=int)
+        state[:, 0] = BOS
 
-        a = agent.act(x)
-        self.sub_test(a.shape, (B, 1), msg='Agent.act output shape test')
+        cur_state = state[:, :1]
+        a = agent.act(cur_state)
+        self.sub_test(a.shape, (B, 1), msg='Agent.act output shape test, input shape=(B, 1)')
+
+        cur_state = state[:, :3]
+        a = agent.act(cur_state)
+        self.sub_test(a.shape, (B, 1), msg='Agent.act output shape test, input_shape=(B, 3)')
