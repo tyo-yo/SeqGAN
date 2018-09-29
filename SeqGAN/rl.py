@@ -18,38 +18,38 @@ class Agent(object):
         self.H = H
         self.generator_pre = GeneratorPretraining(V, E, H)
         self.generator = Generator(V, E, H)
-        self.reset_state()
+        self.reset_rnn_state()
 
-    def reset_state(self):
+    def reset_rnn_state(self):
         self.h = np.zeros([self.B, self.H])
         self.c = np.zeros([self.B, self.H])
 
-    def set_state(self, h, c):
+    def set_rnn_state(self, h, c):
         self.h = h
         self.c = c
 
-    def evaluate(self, state, model=None):
+    def evaluate(self, observed_state, model=None):
         '''
-        Evaluate next word probability by using state (word id).
+        Evaluate next word probability by using observed state (word id).
         model should be stateful.
         # Arguments:
-            state: numpy array, dtype=int, shape = (B, 1),
-                state indicates current word.
+            observed_state: numpy array, dtype=int, shape = (B, 1),
+                observed_state indicates current word.
         # Returns:
             probs: numpy array, dtype=float, shape = (B, V),
                 probs are next word probabiliies.
         '''
         _model = model if model else self.generator
-        probs, h, c = _model.predict([state, self.h, self.c])    # (B, V)
-        self.set_state(h, c)    # Update states
+        probs, h, c = _model.predict([observed_state, self.h, self.c])    # (B, V)
+        self.set_rnn_state(h, c)    # Update states
 
         return probs
 
-    def act(self, state, epsilon=0):
+    def act(self, observed_state, epsilon=0):
         '''
         # Arguments:
-            state: numpy array, dtype=int, shape = (B, 1),
-                state indicates current word.
+            observed_state: numpy array, dtype=int, shape = (B, 1),
+                observed_state indicates current word.
             epsilon: float, 0 <= epsilon <= 1,
                 if epsilon is 1, the Agent will act completely random.
         # Returns:
@@ -59,7 +59,7 @@ class Agent(object):
         if np.random.rand() <= epsilon:
             action = np.random.randint(low=0, high=self.num_actions, size=(self.B, 1))
         else:
-            probs = self.evaluate(state)
+            probs = self.evaluate(observed_state)
             action = self.sampling(probs)
         return action
 
