@@ -31,28 +31,40 @@ class Agent(object):
     def get_rnn_state(self):
         return self.h, self.c
 
-    def evaluate(self, observed_state, model=None):
+    def evaluate(self, state, model=None):
         '''
         Evaluate next word probability by using observed state (word id).
         model should be stateful.
         # Arguments:
-            observed_state: numpy array, dtype=int, shape = (B, 1),
-                observed_state indicates current word.
+            state: numpy array, dtype=int, shape = (B, 1),
+                state indicates current word.
         # Returns:
             probs: numpy array, dtype=float, shape = (B, V),
                 probs are next word probabiliies.
         '''
         _model = model if model else self.generator
-        probs, h, c = _model.predict([observed_state, self.h, self.c])    # (B, V)
+        probs, h, c = _model.predict([state, self.h, self.c])    # (B, V)
         self.set_rnn_state(h, c)    # Update states
 
         return probs
 
-    def act(self, observed_state, epsilon=0):
+    def act(self, state, epsilon=0):
         '''
         # Arguments:
-            observed_state: numpy array, dtype=int, shape = (B, 1),
-                observed_state indicates current word.
+            state: numpy array, dtype=int, shape = (B, t)
+            epsilon: float, 0 <= epsilon <= 1,
+                if epsilon is 1, the Agent will act completely random.
+        # Returns:
+            action: numpy array, dtype=int, shape = (B, 1)
+        '''
+        word = state[:, -1].reshape([-1, 1])
+        return self._act_on_word(word, epsilon=epsilon)
+
+    def _act_on_word(self, word, epsilon=0):
+        '''
+        # Arguments:
+            word: numpy array, dtype=int, shape = (B, 1),
+                word indicates current word.
             epsilon: float, 0 <= epsilon <= 1,
                 if epsilon is 1, the Agent will act completely random.
         # Returns:
@@ -62,7 +74,7 @@ class Agent(object):
         if np.random.rand() <= epsilon:
             action = np.random.randint(low=0, high=self.num_actions, size=(self.B, 1))
         else:
-            probs = self.evaluate(observed_state)
+            probs = self.evaluate(word)
             action = self.sampling(probs)
         return action
 
