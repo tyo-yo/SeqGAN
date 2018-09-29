@@ -3,7 +3,7 @@ from tests.context import np
 
 top = os.getcwd()
 
-class TestGenerator(unittest.TestCase):
+class TestAgent(unittest.TestCase):
     def sub_test(self, actual, expected, msg=None):
         with self.subTest(actual=actual, expected=expected):
             self.assertEqual(actual, expected, msg=msg)
