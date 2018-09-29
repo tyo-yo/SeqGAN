@@ -7,7 +7,7 @@ class TestAgent(unittest.TestCase):
         with self.subTest(actual=actual, expected=expected):
             self.assertEqual(actual, expected, msg=msg)
 
-    def test_generator(self):
+    def test_agent(self):
         B, V, E, H, T = 32, 6000, 2, 3, 30
         agent = Agent(B, V, E, H)
 
