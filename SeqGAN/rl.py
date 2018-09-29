@@ -148,7 +148,7 @@ class Environment(object):
         # Arguments:
             action: numpy array, dtype=int, shape = (B, 1)
         # Returns:
-            reward: numpy array, dtype=float, State-Action value
+            reward: numpy array, dtype=float, shape = (B, 1), State-Action value
         # Requires:
             t, T: used to define time range.
             state: determined texts, Y[0:t-1], used for Rollout.

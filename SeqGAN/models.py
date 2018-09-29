@@ -61,7 +61,7 @@ def Discriminator(V, E, filter_sizes, num_filters, dropout):
     # Returns:
         discriminator: keras model
             input: word ids, shape = (B, T)
-            output: probability of true data or not, shape = (B,)
+            output: probability of true data or not, shape = (B, 1)
     '''
     input = Input(shape=(None,), dtype='int32', name='Input')   # (B, T)
     out = Embedding(V, E, name='Embedding')(input)  # (B, T, E)
