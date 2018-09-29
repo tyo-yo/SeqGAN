@@ -27,11 +27,10 @@ def GeneratorPretraining(V, E, H):
     generator_pretraining = Model(input, out)
     return generator_pretraining
 
-def Generator(B, V, E, H):
+def Generator(V, E, H):
     '''
     Create stateful Generator, which generate a next word.
     # Arguments:
-        B: int, batch_size
         V: int, Vocabrary size
         E: int, Embedding size
         H: int, LSTM hidden size
@@ -47,9 +46,9 @@ def Generator(B, V, E, H):
     out, h, c = LSTM(H, return_state=True, name='LSTM')(out,
         initial_state=[input_h, input_c])  # (B, H)
     out = Dense(V, activation='softmax', name='Dense_softmax')(out)    # (B, V)
-    generator = Model([input, input_h, input_c], out)
+    generator = Model([input, input_h, input_c], [out, h, c])
     return generator
-    
+
 def Discriminator(V, E, filter_sizes, num_filters, dropout):
     '''
     Disciriminator model.
