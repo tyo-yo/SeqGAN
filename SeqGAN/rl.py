@@ -76,7 +76,7 @@ class Agent(object):
         action = None
         if np.random.rand() <= epsilon:
             action = np.random.randint(low=0, high=self.num_actions, size=(self.B, 1))
-        else if not deterministic:
+        elif not deterministic:
             probs = self.evaluate(word)
             action = self.sampling(probs)
         else:
