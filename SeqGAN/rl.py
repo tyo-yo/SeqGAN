@@ -3,19 +3,22 @@ from SeqGAN.utils import DiscriminatorGenerator
 import numpy as np
 
 class Agent(object):
-    def __init__(self, B, V, E, H):
+    def __init__(self, B, V, E, H, n_sample=16):
         '''
         # Arguments:
             B: int, batch_size
             V: int, Vocabrary size
             E: int, Embedding size
             H: int, LSTM hidden size
+        # Optional Arguments
+            n_sample: int, default is 16, the number of Monte Calro search sample
         '''
         self.num_actions = V
         self.B = B
         self.V = V
         self.E = E
         self.H = H
+        self.n_sample = n_sample
         self.generator_pre = GeneratorPretraining(V, E, H)
         self.generator = Generator(V, E, H)
         self.reset_rnn_state()
@@ -48,7 +51,7 @@ class Agent(object):
 
         return probs
 
-    def act(self, state, epsilon=0):
+    def act(self, state, epsilon=0, deterministic=False):
         '''
         # Arguments:
             state: numpy array, dtype=int, shape = (B, t)
@@ -58,9 +61,9 @@ class Agent(object):
             action: numpy array, dtype=int, shape = (B, 1)
         '''
         word = state[:, -1].reshape([-1, 1])
-        return self._act_on_word(word, epsilon=epsilon)
+        return self._act_on_word(word, epsilon=epsilon, deterministic=deterministic)
 
-    def _act_on_word(self, word, epsilon=0):
+    def _act_on_word(self, word, epsilon=0, deterministic=False):
         '''
         # Arguments:
             word: numpy array, dtype=int, shape = (B, 1),
@@ -73,9 +76,12 @@ class Agent(object):
         action = None
         if np.random.rand() <= epsilon:
             action = np.random.randint(low=0, high=self.num_actions, size=(self.B, 1))
-        else:
+        else if not deterministic:
             probs = self.evaluate(word)
             action = self.sampling(probs)
+        else:
+            probs = self.evaluate(word) # (B, T)
+            action = np.argmax(probs, axis=-1).reshape([-1, 1])
         return action
 
     def sampling(self, probs):
@@ -114,55 +120,89 @@ class Environment(object):
 
     def reset(self):
         self.t = 0
-        self.state = np.zeros(self.B, self.T)
+        self.state = np.zeros([self.B, 1], dtype=np.int32)
         self.state[:, 0] = self.BOS
-        self.state = np.array([[self.BOS] for i in range(self.B)])
         self.sentence = []
 
-    def step(self):
+    def step(self, action):
         '''
         Step t -> t + 1 and returns a result of the Agent action.
         # Arguments:
-            action: numpy array, dtype=int, shape = (B, 1)
+            action: numpy array, dtype=int, shape = (B, 1),
+                state is Y_0:t-1, and action is y_t
         # Returns:
-            next_state: numpy array, dtype=int, shape = (B, T)
+            next_state: numpy array, dtype=int, shape = (B, t)
             reward: numpy array, dtype=float, shape = (B, 1)
             is_episode_end: bool
             info: dict
         '''
         self.t = self.t + 1
 
-        reward = self.Q()
-
-        self.state[:, self.t] = action
         next_state = self.state
+        reward = self.Q(action, n_sample)
         is_episode_end = self.t >= self.T
 
+        self._append_state(action)
+        info = None
 
-    def render(self):
-        pass
+        return [next_state, reward, is_episode_end, info]
 
-    def Q(self, action):
+    def render(self, head=1):
+        for i in range(head):
+            ids = self.state[i, :]
+            words = [data_generator.id2word[id] for id in ids.tolist()]
+            print(''.join(words))
+        print('-'* 30 + 'episode end'+ '-' * 33)
+
+
+    def Q(self, action, n_sample=16):
         '''
-        State-Action value function using Rollout policy.
+        State-Action value function using Rollout policy
         # Arguments:
             action: numpy array, dtype=int, shape = (B, 1)
+
+        # Optional Arguments:
+            n_sample: int, default is 16, number of samples for Monte Calro Search
+
         # Returns:
             reward: numpy array, dtype=float, shape = (B, 1), State-Action value
+
         # Requires:
             t, T: used to define time range.
             state: determined texts, Y[0:t-1], used for Rollout.
             action: next words, y[t], used for sentence Y[0:t].
             g_beta: Rollout policy.
         '''
-        if t == self.T - 1:
-            return XXX
+        h, c = self.g_beta.get_rnn_state()
+        reward = np.zeros([B, 1])
+        Y_base = self.states    # (B, t-1)
+
+        if self.t >= self.T - 1:
+            Y = self._append_state(action, state=Y_base)
+            return self.discriminator.predict(Y)
 
         # Rollout
-        Y = np.zeros(self.B, self.T)
-        Y[:, :self.t - 1] = self.state[:, :self.t - 1]
-        Y[:, self.t] = action[:, 0]
+        for idx_sample in range(self.n_sample):
+            Y = Y_base
+            self.g_beta.set_rnn_state(h, c)
+            y_t = self.g_beta.act(Y, epsilon=0)
+            Y = self._append_state(y_t, state=Y)
 
-        state = action
-        for t in range(self.t + 1, T):
-            next_word = g_beta.act()
+            for tau in range(start=self.t+1, stop=self.T):
+                y_tau = self.g_beta.act(Y, epsilon=0)
+                Y = self._append_state(y_tau, state=Y)
+            reward += self.discriminator.predict(Y)
+        reward = np.average(reward, axis=-1)
+
+        return reward
+
+
+    def _append_state(word, state=None):
+        '''
+        # Arguments:
+            word: numpy array, dtype=int, shape = (B, 1)
+        '''
+        if state is None:
+            self.state = np.concatenate([self.state, word], axis=-1)
+        else:
+            return np.concatenate([state, word], axis= -1)
