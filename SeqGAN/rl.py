@@ -28,6 +28,9 @@ class Agent(object):
         self.h = h
         self.c = c
 
+    def get_rnn_state(self):
+        return self.h, self.c
+
     def evaluate(self, observed_state, model=None):
         '''
         Evaluate next word probability by using observed state (word id).
