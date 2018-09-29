@@ -13,8 +13,20 @@ class Agent(object):
         '''
         self.num_actions = V
         self.B = B
+        self.V = V
+        self.E = E
+        self.H = H
         self.generator_pre = GeneratorPretraining(V, E, H)
-        self.generator = Generator(B, V, E, H)
+        self.generator = Generator(V, E, H)
+        self.reset_state()
+
+    def reset_state(self):
+        self.h = np.zeros([self.B, self.H])
+        self.c = np.zeros([self.B, self.H])
+
+    def set_state(self, h, c):
+        self.h = h
+        self.c = c
 
     def evaluate(self, state, model=None):
         '''
@@ -28,7 +40,9 @@ class Agent(object):
                 probs are next word probabiliies.
         '''
         _model = model if model else self.generator
-        probs = _model.predict(state)    # (B, V)
+        probs, h, c = _model.predict([state, self.h, self.c])    # (B, V)
+        self.set_state(h, c)    # Update states
+
         return probs
 
     def act(self, state, epsilon=0):
@@ -70,19 +84,11 @@ class Environment(object):
         Environment class for Reinforced Learning
         # Arguments:
             discriminator: keras model
-            data_generator: SeqGAN.DiscriminatorGenerator
-            g_beta: SeqGAN.Generator, copy of Agent's generator.
-                params of g_beta should be updated with those of Agent's
+            data_generator: SeqGAN.models.DiscriminatorGenerator
+            g_beta: SeqGAN.rl.Agent, copy of Agent
+                params of g_beta.generator should be updated with those of original
                 generator on regular occasions.
         '''
-            # data_generator = DiscriminatorGenerator(
-            #     path_pos=os.path.join(top, 'data', 'kokoro_parsed.txt'),
-            #     path_neg=os.path.join(top, 'tests', 'data', 'sample_generated.txt'),
-            #     B=32,
-            #     shuffle=True)
-            # filter_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20] # CNNに使うフィルターのサイズ
-            # num_filters = [100, 200, 200, 200, 200, 100, 100, 100, 100, 100, 160, 160] # CNNに使うフィルターの数
-            # discriminator = Discriminator(6612, 3, filter_sizes, num_filters, 0.75)
         self.data_generator = data_generator
         self.B = data_generator.B
         self.T = data_generator.T
@@ -109,15 +115,17 @@ class Environment(object):
             is_episode_end: bool
             info: dict
         '''
-        self.state[:, self.t] = action
         self.t = self.t + 1
 
+        reward = self.Q()
+
+        self.state[:, self.t] = action
         next_state = self.state
         is_episode_end = self.t >= self.T
-        reward = self.Q()
 
 
     def render(self):
+        pass
 
     def Q(self, action):
         '''
@@ -132,3 +140,14 @@ class Environment(object):
             action: next words, y[t], used for sentence Y[0:t].
             g_beta: Rollout policy.
         '''
+        if t == self.T - 1:
+            return XXX
+
+        # Rollout
+        Y = np.zeros(self.B, self.T)
+        Y[:, :self.t - 1] = self.state[:, :self.t - 1]
+        Y[:, self.t] = action[:, 0]
+
+        state = action
+        for t in range(self.t + 1, T):
+            next_word = g_beta.act()
