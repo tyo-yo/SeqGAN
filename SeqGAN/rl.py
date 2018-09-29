@@ -3,22 +3,23 @@ from SeqGAN.utils import DiscriminatorGenerator
 import numpy as np
 
 class Agent(object):
-    def __init__(self, B, V, E, H, n_sample=16):
+    '''
+    On each step, Agent act on state.
+    Then Environment return next state, reward, and so on.
+    '''
+    def __init__(self, B, V, E, H):
         '''
         # Arguments:
             B: int, batch_size
             V: int, Vocabrary size
             E: int, Embedding size
             H: int, LSTM hidden size
-        # Optional Arguments
-            n_sample: int, default is 16, the number of Monte Calro search sample
         '''
         self.num_actions = V
         self.B = B
         self.V = V
         self.E = E
         self.H = H
-        self.n_sample = n_sample
         self.generator_pre = GeneratorPretraining(V, E, H)
         self.generator = Generator(V, E, H)
         self.reset_rnn_state()
@@ -47,7 +48,7 @@ class Agent(object):
         '''
         _model = model if model else self.generator
         probs, h, c = _model.predict([state, self.h, self.c])    # (B, V)
-        self.set_rnn_state(h, c)    # Update states
+        self.set_rnn_state(h, c)    # Update state
 
         return probs
 
@@ -100,7 +101,11 @@ class Agent(object):
         return action
 
 class Environment(object):
-    def __init__(self, discriminator, data_generator, g_beta):
+    '''
+    On each step, Agent act on state.
+    Then Environment return next state, reward, and so on.
+    '''
+    def __init__(self, discriminator, data_generator, g_beta, n_sample=16):
         '''
         Environment class for Reinforced Learning
         # Arguments:
@@ -109,20 +114,23 @@ class Environment(object):
             g_beta: SeqGAN.rl.Agent, copy of Agent
                 params of g_beta.generator should be updated with those of original
                 generator on regular occasions.
+        # Optional Arguments
+            n_sample: int, default is 16, the number of Monte Calro search sample
         '''
         self.data_generator = data_generator
         self.B = data_generator.B
         self.T = data_generator.T
+        self.n_sample = n_sample
         self.BOS = data_generator.BOS
         self.discriminator = discriminator
         self.g_beta = g_beta
         self.reset()
 
     def reset(self):
-        self.t = 0
+        self.t = 1
         self.state = np.zeros([self.B, 1], dtype=np.int32)
         self.state[:, 0] = self.BOS
-        self.sentence = []
+        self.g_beta.reset_rnn_state()
 
     def step(self, action):
         '''
@@ -138,11 +146,11 @@ class Environment(object):
         '''
         self.t = self.t + 1
 
-        next_state = self.state
-        reward = self.Q(action, n_sample)
+        reward = self.Q(action, self.n_sample)
         is_episode_end = self.t >= self.T
 
         self._append_state(action)
+        next_state = self.state
         info = None
 
         return [next_state, reward, is_episode_end, info]
@@ -150,9 +158,9 @@ class Environment(object):
     def render(self, head=1):
         for i in range(head):
             ids = self.state[i, :]
-            words = [data_generator.id2word[id] for id in ids.tolist()]
+            words = [self.data_generator.id2word[id] for id in ids.tolist()]
             print(''.join(words))
-        print('-'* 30 + 'episode end'+ '-' * 33)
+        print('-' * 80)
 
 
     def Q(self, action, n_sample=16):
@@ -174,21 +182,21 @@ class Environment(object):
             g_beta: Rollout policy.
         '''
         h, c = self.g_beta.get_rnn_state()
-        reward = np.zeros([B, 1])
-        Y_base = self.states    # (B, t-1)
+        reward = np.zeros([self.B, 1])
+        Y_base = self.state    # (B, t-1)
 
         if self.t >= self.T - 1:
             Y = self._append_state(action, state=Y_base)
             return self.discriminator.predict(Y)
 
         # Rollout
-        for idx_sample in range(self.n_sample):
+        for idx_sample in range(n_sample):
             Y = Y_base
             self.g_beta.set_rnn_state(h, c)
             y_t = self.g_beta.act(Y, epsilon=0)
             Y = self._append_state(y_t, state=Y)
 
-            for tau in range(start=self.t+1, stop=self.T):
+            for tau in range(self.t+1, self.T):
                 y_tau = self.g_beta.act(Y, epsilon=0)
                 Y = self._append_state(y_tau, state=Y)
             reward += self.discriminator.predict(Y)
@@ -197,7 +205,7 @@ class Environment(object):
         return reward
 
 
-    def _append_state(word, state=None):
+    def _append_state(self, word, state=None):
         '''
         # Arguments:
             word: numpy array, dtype=int, shape = (B, 1)
