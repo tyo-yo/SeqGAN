@@ -20,7 +20,6 @@ class Agent(object):
         self.V = V
         self.E = E
         self.H = H
-        self.generator_pre = GeneratorPretraining(V, E, H)
         self.generator = Generator(V, E, H)
         self.reset_rnn_state()
 
