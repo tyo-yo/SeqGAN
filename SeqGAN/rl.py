@@ -109,7 +109,7 @@ class Environment(object):
         Environment class for Reinforced Learning
         # Arguments:
             discriminator: keras model
-            data_generator: SeqGAN.models.DiscriminatorGenerator
+            data_generator: SeqGAN.models.GeneratorPretrainingGenerator
             g_beta: SeqGAN.rl.Agent, copy of Agent
                 params of g_beta.generator should be updated with those of original
                 generator on regular occasions.
