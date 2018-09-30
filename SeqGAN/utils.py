@@ -391,3 +391,34 @@ class DiscriminatorGenerator(Sequence):
     def on_epoch_end(self):
         self.reset()
         pass
+
+def generate_samples(generator, g_data, num, output_file, B=64):
+    sentences=[]
+    for _ in range(num // B + 1):
+        x = np.zeros([B, 1], dtype=np.int32)
+        x[:, 0] = g_data.BOS
+        ids = x
+        h = np.zeros([B, H])
+        c = np.zeros([B, H])
+
+        # Predict ids
+        for _ in range(T):
+            probs, h, c = generator.predict([x, h, c])
+            for i in range(B):
+                p = probs[i]
+                x[i, 0] = np.random.choice(g_data.V, p=p)
+            ids = np.concatenate([ids, x], axis=-1)
+        ids = ids[:, 1:]
+
+        # Convert sentences
+        ids_list = ids.tolist()
+        for sentence_id in ids_list:
+            sentence = [g_data.id2word[id] for id in sentence_id]
+            sentences.append(sentence)
+
+    output_file = os.path.join(top, 'data', 'save', 'generated_sentences.txt')
+    output_str = ''
+    for i in range(num):
+        output_str += ' '.join(sentences[i]) + '\n'
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(output_str)
