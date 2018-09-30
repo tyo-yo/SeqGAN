@@ -398,11 +398,14 @@ def generate_samples(generator, g_data, num, output_file, B=64):
         x = np.zeros([B, 1], dtype=np.int32)
         x[:, 0] = g_data.BOS
         ids = x
+        input_h_layer = generator.get_layer('Input_h')
+        H = input_h_layer.get_input_shape_at(0)[1]
+        generator.layers
         h = np.zeros([B, H])
         c = np.zeros([B, H])
 
         # Predict ids
-        for _ in range(T):
+        for _ in range(g_data.T):
             probs, h, c = generator.predict([x, h, c])
             for i in range(B):
                 p = probs[i]
@@ -416,7 +419,6 @@ def generate_samples(generator, g_data, num, output_file, B=64):
             sentence = [g_data.id2word[id] for id in sentence_id]
             sentences.append(sentence)
 
-    output_file = os.path.join(top, 'data', 'save', 'generated_sentences.txt')
     output_str = ''
     for i in range(num):
         output_str += ' '.join(sentences[i]) + '\n'
