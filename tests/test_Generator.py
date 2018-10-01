@@ -1,5 +1,5 @@
 from tests.context import unittest, os, Generator, GeneratorPretrainingGenerator
-from tests.context import np
+from tests.context import np, softmax
 
 top = os.getcwd()
 
@@ -31,9 +31,9 @@ class TestGenerator(unittest.TestCase):
         x = np.array(x).reshape(B, 1)
 
         pred, h, c = model.predict([x, init_h, init_c])
-
+        prob = softmax(pred)
         self.sub_test(pred.shape, (B, gen.V), msg='output shape test')
-        self.assertAlmostEqual(B, np.sum(pred), places=1, msg='softmax test')
+        self.assertAlmostEqual(B, np.sum(prob), places=1, msg='softmax test')
 
         for i in range(100):
             pred2, h, c = model.predict([x, h, c])
