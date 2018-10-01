@@ -45,7 +45,7 @@ def Generator(V, E, H):
     out = Embedding(V, E, mask_zero=True, name='Embedding')(input) # (B, 1, E)
     out, h, c = LSTM(H, return_state=True, name='LSTM')(out,
         initial_state=[input_h, input_c])  # (B, H)
-    out = Dense(V, activation='softmax', name='Dense_softmax')(out)    # (B, V)
+    out = Dense(V, name='Dense')(out)    # (B, V)
     generator = Model([input, input_h, input_c], [out, h, c])
     return generator
 
