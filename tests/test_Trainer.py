@@ -1,8 +1,6 @@
 from tests.context import unittest, os, Agent, Environment, Discriminator, np
 from tests.context import DiscriminatorGenerator
 from tests.context import Trainer
-# %load_ext autoreload
-# %autoreload 2
 top = os.getcwd()
 
 class TestTrainer(unittest.TestCase):
