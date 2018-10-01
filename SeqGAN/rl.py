@@ -1,5 +1,6 @@
 from SeqGAN.models import Generator, GeneratorPretraining, Discriminator
-from SeqGAN.utils import DiscriminatorGenerator
+from SeqGAN.utils import DiscriminatorGenerator, softmax
+import keras.backend as K
 import numpy as np
 
 class Agent(object):
@@ -46,7 +47,8 @@ class Agent(object):
                 probs are next word probabiliies.
         '''
         _model = model if model else self.generator
-        probs, h, c = _model.predict([state, self.h, self.c])    # (B, V)
+        logG, h, c = _model.predict([state, self.h, self.c])    # (B, V)
+        probs = softmax(np.exp(logG))
         self.set_rnn_state(h, c)    # Update state
 
         return probs

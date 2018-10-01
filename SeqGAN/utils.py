@@ -424,3 +424,9 @@ def generate_samples(generator, g_data, num, output_file, B=64):
         output_str += ' '.join(sentences[i]) + '\n'
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(output_str)
+
+def softmax(x, axis=-1):
+    c = np.max(x, axis).reshape([-1, 1])
+    exp_x = np.exp(x-c)
+    y = exp_x / np.sum(exp_x, axis).reshape([-1, 1])
+    return y
