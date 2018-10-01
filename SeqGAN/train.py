@@ -3,6 +3,7 @@ from SeqGAN.utils import GeneratorPretrainingGenerator, DiscriminatorGenerator
 from SeqGAN.utils import generate_samples
 from SeqGAN.rl import Agent, Environment
 from keras.optimizers import Adam
+import keras.backend as K
 import os
 import numpy as np
 
@@ -40,7 +41,7 @@ class Trainer(object):
         else:
             self.d_pre_path = d_pre_path
 
-        g_adam = Adam(lr=0.1)
+        g_adam = Adam()
         self.generator_pre.compile(g_adam, 'categorical_crossentropy')
         print('Generator pre-training')
 
@@ -63,7 +64,7 @@ class Trainer(object):
         d_adam = Adam()
         self.discriminator.compile(d_adam, 'binary_crossentropy')
         print('Discriminator pre-training')
-        
+
         self.discriminator.fit_generator(
             self.d_data,
             steps_per_epoch=None,
@@ -73,3 +74,18 @@ class Trainer(object):
     def load_pre_train(self, g_pre_path, d_pre_path):
         self.agent.generator.load_weights(g_pre_path)
         self.discriminator.load_weights(d_pre_path)
+
+    def train(self, steps=10, g_steps=1, d_steps=1):
+        for step in range(steps):
+            rewards = np.zeros([agent.B, g_T-1])
+            for t in range(g_T-1):
+                state = env.state
+                action = agent.act(state, epsilon=0.1)
+                next_state, reward, is_episode_end, info = env.step(action)
+                rewards[:, t] = reward.reshape([agent.B, ])
+                env.render(head=1)
+                if is_episode_end:
+                    env.render(head=32)
+                    print('Episode end')
+                    break
+            K.gradients()
