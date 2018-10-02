@@ -1,3 +1,4 @@
+*tmp.py
 tests/data/save/*
 data/save/*
 *.h5
