@@ -1,6 +1,10 @@
+tests/data/save/*
+data/save/*
+*.h5
+*.hdf5
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
+*.py[cod
 *$py.class
 
 # C extensions
