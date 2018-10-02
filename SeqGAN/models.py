@@ -4,6 +4,7 @@ import keras.backend as K
 from keras.models import Model
 from keras.layers import Input, Lambda, Activation, Dropout, Concatenate
 from keras.layers import Dense, Embedding, LSTM, Conv1D, GlobalMaxPooling1D
+from keras.layers import Activation
 from keras.layers.wrappers import TimeDistributed
 
 def GeneratorPretraining(V, E, H):
@@ -23,7 +24,9 @@ def GeneratorPretraining(V, E, H):
     input = Input(shape=(None,), dtype='int32', name='Input') # (B, T)
     out = Embedding(V, E, mask_zero=True, name='Embedding')(input) # (B, T, E)
     out = LSTM(H, return_sequences=True, name='LSTM')(out)  # (B, T, H)
-    out = TimeDistributed(Dense(V, activation='softmax', name='Dense'), name='TimeDense')(out)    # (B, T, V)
+    out = TimeDistributed(
+        Dense(V, activation='softmax', name='DenseSoftmax'),
+        name='TimeDenseSoftmax')(out)    # (B, T, V)
     generator_pretraining = Model(input, out)
     return generator_pretraining
 
@@ -45,7 +48,9 @@ def Generator(V, E, H):
     out = Embedding(V, E, mask_zero=True, name='Embedding')(input) # (B, 1, E)
     out, h, c = LSTM(H, return_state=True, name='LSTM')(out,
         initial_state=[input_h, input_c])  # (B, H)
-    out = Dense(V, name='Dense')(out)    # (B, V)
+    out = Dense(V, activation='softmax', name='DenseSoftmax')(out)    # (B, V)
+    out = Lambda(lambda x: K.log(x), name='LogG')(out)
+
     generator = Model([input, input_h, input_c], [out, h, c])
     return generator
 

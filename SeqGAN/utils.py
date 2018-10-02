@@ -405,8 +405,8 @@ def generate_samples(generator, g_data, num, output_file, B=64):
 
         # Predict ids
         for _ in range(g_data.T):
-            preds, h, c = generator.predict([x, h, c])
-            probs = softmax(preds)
+            logG, h, c = generator.predict([x, h, c])
+            probs = np.exp(logG)
             for i in range(B):
                 p = probs[i]
                 x[i, 0] = np.random.choice(g_data.V, p=p)

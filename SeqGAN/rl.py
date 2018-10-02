@@ -48,7 +48,7 @@ class Agent(object):
         '''
         _model = model if model else self.generator
         logG, h, c = _model.predict([state, self.h, self.c])    # (B, V)
-        probs = softmax(np.exp(logG))
+        probs = np.exp(logG)
         self.set_rnn_state(h, c)    # Update state
 
         return probs
