@@ -400,13 +400,13 @@ def generate_samples(generator, g_data, num, output_file, B=64):
         ids = x
         input_h_layer = generator.get_layer('Input_h')
         H = input_h_layer.get_input_shape_at(0)[1]
-        generator.layers
         h = np.zeros([B, H])
         c = np.zeros([B, H])
 
         # Predict ids
         for _ in range(g_data.T):
-            probs, h, c = generator.predict([x, h, c])
+            preds, h, c = generator.predict([x, h, c])
+            probs = softmax(preds)
             for i in range(B):
                 p = probs[i]
                 x[i, 0] = np.random.choice(g_data.V, p=p)
