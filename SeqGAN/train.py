@@ -30,20 +30,20 @@ class Trainer(object):
 
         self.generator_pre = GeneratorPretraining(self.V, g_E, g_H)
 
-    def pre_train(self, g_epochs=3, d_epochs=1, g_pre_path=None, d_pre_path=None):
+    def pre_train(self, g_epochs=3, d_epochs=1, g_pre_path=None ,d_pre_path=None):
+        self.pre_train_generator(g_epochs=g_epochs, g_pre_path=g_pre_path)
+        self.pre_train_discriminator(d_epochs=d_epochs, d_pre_path=d_pre_path)
+
+    def pre_train_generator(self, g_epochs=3, g_pre_path=None):
         if g_pre_path is None:
             self.g_pre_path = os.path.join(self.top, 'data', 'save', 'generator_pre.hdf5')
         else:
             self.g_pre_path = g_pre_path
 
-        if d_pre_path is None:
-            self.d_pre_path = os.path.join(self.top, 'data', 'save', 'discriminator_pre.hdf5')
-        else:
-            self.d_pre_path = d_pre_path
-
         g_adam = Adam()
         self.generator_pre.compile(g_adam, 'categorical_crossentropy')
         print('Generator pre-training')
+        self.generator_pre.summary()
 
         self.generator_pre.fit_generator(
             self.g_data,
@@ -52,7 +52,14 @@ class Trainer(object):
         self.generator_pre.save_weights(self.g_pre_path)
         self.agent.generator.load_weights(self.g_pre_path)
 
+    def pre_train_discriminator(self, d_epochs=1, d_pre_path=None):
+        if d_pre_path is None:
+            self.d_pre_path = os.path.join(self.top, 'data', 'save', 'discriminator_pre.hdf5')
+        else:
+            self.d_pre_path = d_pre_path
+
         self.path_neg = os.path.join(self.top, 'data', 'save', 'generated_sentences.txt')
+        print('Start Generating sentences')
         generate_samples(self.agent.generator, self.g_data, 10000, self.path_neg)
 
         self.d_data = DiscriminatorGenerator(
@@ -63,6 +70,7 @@ class Trainer(object):
 
         d_adam = Adam()
         self.discriminator.compile(d_adam, 'binary_crossentropy')
+        self.discriminator.summary()
         print('Discriminator pre-training')
 
         self.discriminator.fit_generator(
@@ -78,6 +86,7 @@ class Trainer(object):
     def train(self, steps=10, g_steps=1, d_steps=1):
         for step in range(steps):
             rewards = np.zeros([agent.B, g_T-1])
+            agent.reset_rnn_state()
             for t in range(g_T-1):
                 state = env.state
                 action = agent.act(state, epsilon=0.1)
@@ -88,4 +97,35 @@ class Trainer(object):
                     env.render(head=32)
                     print('Episode end')
                     break
-            K.gradients()
+# agent.generator.output[0]
+# grads_theta = K.gradients(agent.generator.output[0], agent.generator.weights)
+# K.get_value(grads_theta[1], feed_dict={state:state, h:agent.generator.h, })
+# K.gradients()
+# env.reset()
+# agent.reset_rnn_state()
+# pred, h, c = agent.generator.output
+
+# %load_ext autoreload
+# %autoreload 2
+# g_B, g_E, g_H, g_T = 64, 128, 64, 40
+# d_B, d_E = 64, 128
+# d_filter_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20] # filter sizes for CNNs
+# d_num_filters = [100, 200, 200, 200, 200, 100, 100, 100, 100, 100, 160, 160] # num of filters for CNNs
+# d_dropout = 0.75
+# n_sample=16
+# g_pre_path='data/save/generator_pre.hdf5'
+# d_pre_path='data/save/discriminator_pre.hdf5'
+#
+#
+# path_pos = os.path.join(top, 'data', 'kokoro_parsed.txt')
+# g_data = GeneratorPretrainingGenerator(
+#     path_pos,
+#     B=g_B,
+#     T=g_T,
+#     min_count=1)
+# V = g_data.V
+# agent = Agent(g_B, V, g_E, g_H)
+# g_beta = Agent(g_B, V, g_E, g_H)
+# discriminator = Discriminator(V, d_E, d_filter_sizes, d_num_filters, d_dropout)
+# env = Environment(discriminator, g_data, g_beta, n_sample=n_sample)
+# keras.backend.clear_session()
