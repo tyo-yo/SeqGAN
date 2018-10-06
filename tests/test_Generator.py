@@ -16,7 +16,6 @@ class TestGenerator(unittest.TestCase):
         H = 3
         V = 5
         generator = Generator(sess, B, V, E, H)
-        generator.layers
         BOS = 1
         x = [BOS] * B
         x = np.array(x).reshape(B, 1)
@@ -36,13 +35,12 @@ class TestGenerator(unittest.TestCase):
         self.assertAlmostEqual(prob[0, 0], prob3[0, 0], places=7, msg='stateful test')
 
         action = np.array([1, 2, 3, 4])
-        reward = np.array([0.1, 0.2, 0.4, 0.8])
+        reward = np.array([0.1, 0, 0.1, 0.8]).reshape(4,1)
         loss = generator.update(x, action, reward)
         for i in range(500):
             generator.reset_rnn_state()
             loss = generator.update(x, action, reward)
             if i % 100 == 0:
-                print(loss)
                 generator.reset_rnn_state()
                 prob = generator.predict(x)
                 print(prob[0])
