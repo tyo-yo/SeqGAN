@@ -98,9 +98,9 @@ class Trainer(object):
 
     def train(self, steps=10, g_steps=1, d_steps=1):
         for step in range(steps):
-            rewards = np.zeros([self.B, self.T-1])
+            rewards = np.zeros([self.B, self.T])
             self.agent.reset()
-            for t in range(self.T-1):
+            for t in range(self.T):
                 state = self.env.get_state()
                 action = self.agent.act(state, epsilon=0.1)
                 next_state, reward, is_episode_end, info = self.env.step(action)
@@ -108,6 +108,6 @@ class Trainer(object):
                 rewards[:, t] = reward.reshape([self.B, ])
                 # self.env.render(head=1)
                 if is_episode_end:
-                    self.env.render(head=3)
-                    print('Episode end')
+                    self.env.render(head=1)
+                    print('Reward: {:.3f}, Episode end'.format(reward[0, 0]))
                     break
