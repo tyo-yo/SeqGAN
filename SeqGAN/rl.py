@@ -25,7 +25,7 @@ class Agent(object):
         self.V = V
         self.E = E
         self.H = H
-        sess.lr = 1e-3
+        sess.lr = lr
         self.generator = Generator(sess, B, V, E, H, lr)
 
     def act(self, state, epsilon=0, deterministic=False):

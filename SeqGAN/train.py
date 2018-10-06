@@ -13,14 +13,15 @@ class Trainer(object):
     '''
     Manage training
     '''
-    def __init__(self, B, T, g_E, g_H, g_lr, d_E, d_filter_sizes, d_num_filters,
-        d_dropout, d_lr,  n_sample=16, generate_samples=10000):
+    def __init__(self, B, T, g_E, g_H, d_E, d_filter_sizes, d_num_filters,
+        d_dropout, g_lr=1e-3, d_lr=1e-3, n_sample=16, generate_samples=10000):
         self.B, self.T = B, T
         self.g_E, self.g_H = g_E, g_H
         self.d_E, self.d_filter_sizes = d_E, d_filter_sizes
         self.d_num_filters, self.d_dropout = d_num_filters, d_dropout
         self.generate_samples = generate_samples
         self.g_lr, self.d_lr = g_lr, d_lr
+
         self.top = os.getcwd()
         self.path_pos = os.path.join(self.top, 'data', 'kokoro_parsed.txt')
         self.path_neg = os.path.join(self.top, 'data', 'save', 'generated_sentences.txt')
@@ -30,8 +31,8 @@ class Trainer(object):
             T=T,
             min_count=1)
         self.V = self.g_data.V
-        self.agent = Agent(sess, B, self.V, g_E, g_H)
-        self.Beta = Agent(sess, B, self.V, g_E, g_H)
+        self.agent = Agent(sess, B, self.V, g_E, g_H, g_lr)
+        self.Beta = Agent(sess, B, self.V, g_E, g_H, g_lr)
         self.discriminator = Discriminator(self.V, d_E, d_filter_sizes, d_num_filters, d_dropout)
         self.env = Environment(self.discriminator, self.g_data, self.Beta, n_sample=n_sample)
 
@@ -100,7 +101,7 @@ class Trainer(object):
                 self.agent.generator.layers[i].set_weights(w)
                 i += 1
 
-    def train(self, steps=10, g_steps=1, d_steps=1, d_epochs=1 verbose=True):
+    def train(self, steps=10, g_steps=1, d_steps=1, d_epochs=1, verbose=True):
         d_adam = Adam(self.d_lr)
         self.discriminator.compile(d_adam, 'binary_crossentropy')
 
