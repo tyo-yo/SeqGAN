@@ -122,6 +122,7 @@ class Generator():
         # Returns:
             prob: np.array, shape=(B, V)
         '''
+        # state = state.reshape(-1, 1)
         feed_dict = {
             self.state_in : state,
             self.h_in : self.h,
@@ -141,11 +142,12 @@ class Generator():
         '''
         Update weights by Policy Gradient.
         # Arguments:
-            state: np.array, Environment state, shape = (B, 1)
+            state: np.array, Environment state, shape = (B, 1) or (B, t)
+                if shape is (B, t), state[:, -1] will be used.
             action: np.array, Agent action, shape = (B, )
                 In training, action will be converted to onehot vector.
                 (Onehot shape will be (B, V))
-            reward: np.array, reward by Environment, shape = (B, 1)
+            reward: np.array, reward by Environment, shape = (B, )
 
         # Optional Arguments:
             h: np.array, shape = (B, H), default is None.
@@ -166,6 +168,8 @@ class Generator():
             h = self.h
         if c is None:
             c = self.c
+        state = state[:, -1].reshape(-1, 1)
+        reward = reward.reshape(-1)
         feed_dict = {
             self.state_in : state,
             self.h_in : h,
