@@ -64,6 +64,12 @@ class Agent(object):
     def reset(self):
         self.generator.reset_rnn_state()
 
+    def save(self, path):
+        self.generator.save(path)
+
+    def load(self, path):
+        self.generator.load(path)
+
 
 class Environment(object):
     '''

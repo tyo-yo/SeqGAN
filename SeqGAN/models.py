@@ -8,6 +8,7 @@ from keras.layers import Activation
 from keras.layers.wrappers import TimeDistributed
 from keras.utils import to_categorical
 import tensorflow as tf
+import pickle
 
 def GeneratorPretraining(V, E, H):
     '''
@@ -243,6 +244,20 @@ class Generator():
             output_str += ' '.join(sentences[i]) + '\n'
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(output_str)
+
+    def save(self, path):
+        weights = []
+        for layer in self.layers:
+            w = layer.get_weights()
+            weights.append(w)
+        with open(path, 'wb') as f:
+            pickle.dump(weights, f)
+
+    def load(self, path):
+        with open(path, 'rb') as f:
+            weights = pickle.load(f)
+        for layer, w in zip(self.layers, weights):
+            layer.set_weights(w)
 
 
 def Discriminator(V, E, filter_sizes, num_filters, dropout):
