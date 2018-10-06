@@ -1,11 +1,13 @@
 from SeqGAN.models import GeneratorPretraining, Discriminator, Generator
 from SeqGAN.utils import GeneratorPretrainingGenerator, DiscriminatorGenerator
-from SeqGAN.utils import generate_samples
 from SeqGAN.rl import Agent, Environment
 from keras.optimizers import Adam
-import keras.backend as K
 import os
 import numpy as np
+import tensorflow as tf
+sess = tf.Session()
+import keras.backend as K
+K.set_session(sess)
 
 class Trainer(object):
     '''
@@ -23,8 +25,8 @@ class Trainer(object):
             T=g_T,
             min_count=1)
         self.V = self.g_data.V
-        self.agent = Agent(g_B, self.V, g_E, g_H)
-        self.g_beta = Agent(g_B, self.V, g_E, g_H)
+        self.agent = Agent(sess, g_B, self.V, g_E, g_H)
+        self.g_beta = Agent(sess, g_B, self.V, g_E, g_H)
         self.discriminator = Discriminator(self.V, d_E, d_filter_sizes, d_num_filters, d_dropout)
         self.env = Environment(self.discriminator, self.g_data, self.g_beta, n_sample=n_sample)
 
@@ -50,7 +52,7 @@ class Trainer(object):
             steps_per_epoch=None,
             epochs=g_epochs)
         self.generator_pre.save_weights(self.g_pre_path)
-        self.agent.generator.load_weights(self.g_pre_path)
+        self._reflect_pre_train()
 
     def pre_train_discriminator(self, d_epochs=1, d_pre_path=None):
         if d_pre_path is None:
@@ -60,7 +62,8 @@ class Trainer(object):
 
         self.path_neg = os.path.join(self.top, 'data', 'save', 'generated_sentences.txt')
         print('Start Generating sentences')
-        generate_samples(self.agent.generator, self.g_data, 10000, self.path_neg)
+        self.agent.generator.generate_samples(self.g_T, self.g_data, 10000,
+            self.path_neg)
 
         self.d_data = DiscriminatorGenerator(
             path_pos=self.path_pos,
@@ -80,10 +83,25 @@ class Trainer(object):
         self.discriminator.save(self.d_pre_path)
 
     def load_pre_train(self, g_pre_path, d_pre_path):
-        self.agent.generator.load_weights(g_pre_path)
+        self.generator_pre.load_weights(g_pre_path)
+        self._reflect_pre_train()
         self.discriminator.load_weights(d_pre_path)
 
+    def _reflect_pre_train(self):
+        i = 0
+        for layer in self.generator_pre.layers:
+            if len(layer.get_weights()) != 0:
+                w = layer.get_weights()
+                self.agent.generator.layers[i].set_weights(w)
+                i += 1
+
     def train(self, steps=10, g_steps=1, d_steps=1):
+        state_in, h_in, c_in = agent.generator.input
+        logG_out, h_out, h_out = agent.generator.output
+        reward_in = keras.layers.Input(shape=(1,), dtype='float32')
+        QlogG = keras.layers.Lambda(lambda x: -1 * x[0] * x[1])([pred, reward_in])
+        rl_model = keras.Model([state_in, h_in, c_in, reward_in], pred)
+
         for step in range(steps):
             rewards = np.zeros([agent.B, g_T-1])
             agent.reset_rnn_state()
@@ -97,35 +115,3 @@ class Trainer(object):
                     env.render(head=32)
                     print('Episode end')
                     break
-# agent.generator.output[0]
-# grads_theta = K.gradients(agent.generator.output[0], agent.generator.weights)
-# K.get_value(grads_theta[1], feed_dict={state:state, h:agent.generator.h, })
-# K.gradients()
-# env.reset()
-# agent.reset_rnn_state()
-# pred, h, c = agent.generator.output
-
-# %load_ext autoreload
-# %autoreload 2
-# g_B, g_E, g_H, g_T = 64, 128, 64, 40
-# d_B, d_E = 64, 128
-# d_filter_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20] # filter sizes for CNNs
-# d_num_filters = [100, 200, 200, 200, 200, 100, 100, 100, 100, 100, 160, 160] # num of filters for CNNs
-# d_dropout = 0.75
-# n_sample=16
-# g_pre_path='data/save/generator_pre.hdf5'
-# d_pre_path='data/save/discriminator_pre.hdf5'
-#
-#
-# path_pos = os.path.join(top, 'data', 'kokoro_parsed.txt')
-# g_data = GeneratorPretrainingGenerator(
-#     path_pos,
-#     B=g_B,
-#     T=g_T,
-#     min_count=1)
-# V = g_data.V
-# agent = Agent(g_B, V, g_E, g_H)
-# g_beta = Agent(g_B, V, g_E, g_H)
-# discriminator = Discriminator(V, d_E, d_filter_sizes, d_num_filters, d_dropout)
-# env = Environment(discriminator, g_data, g_beta, n_sample=n_sample)
-# keras.backend.clear_session()
