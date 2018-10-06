@@ -96,22 +96,17 @@ class Trainer(object):
                 i += 1
 
     def train(self, steps=10, g_steps=1, d_steps=1):
-        state_in, h_in, c_in = agent.generator.input
-        logG_out, h_out, h_out = agent.generator.output
-        reward_in = keras.layers.Input(shape=(1,), dtype='float32')
-        QlogG = keras.layers.Lambda(lambda x: -1 * x[0] * x[1])([pred, reward_in])
-        rl_model = keras.Model([state_in, h_in, c_in, reward_in], pred)
-
         for step in range(steps):
-            rewards = np.zeros([agent.B, g_T-1])
-            agent.reset_rnn_state()
-            for t in range(g_T-1):
-                state = env.state
-                action = agent.act(state, epsilon=0.1)
-                next_state, reward, is_episode_end, info = env.step(action)
-                rewards[:, t] = reward.reshape([agent.B, ])
-                env.render(head=1)
+            rewards = np.zeros([self.g_B, self.g_T-1])
+            self.agent.reset()
+            for t in range(self.g_T-1):
+                state = self.env.get_state()
+                action = self.agent.act(state, epsilon=0.1)
+                next_state, reward, is_episode_end, info = self.env.step(action)
+                self.agent.generator.update(state, action, reward)
+                rewards[:, t] = reward.reshape([self.g_B, ])
+                self.env.render(head=1)
                 if is_episode_end:
-                    env.render(head=32)
+                    self.env.render(head=32)
                     print('Episode end')
                     break
