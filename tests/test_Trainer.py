@@ -10,8 +10,7 @@ class TestTrainer(unittest.TestCase):
         with self.subTest(actual=actual, expected=expected):
             self.assertEqual(actual, expected, msg=msg)
 
-    def test_trainer_pretraining(self):
-
+    def test_trainer(self):
         g_B, g_E, g_H, g_T = 32, 4, 4, 40
         d_B, d_E = 32, 4
         d_filter_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20] # filter sizes for CNNs
@@ -35,3 +34,5 @@ class TestTrainer(unittest.TestCase):
             txt = [trainer.g_data.id2word[id] for id in x[i].tolist()]
             label = y[i]
             print('{}, {:.3f}: {}'.format(label, pred[i,0], ''.join(txt)))
+
+        trainer.train(steps=1)
