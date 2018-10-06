@@ -1,6 +1,8 @@
-from tests.context import unittest, os, Generator, GeneratorPretrainingGenerator
-from tests.context import np, softmax
+from tests.context import unittest, os, Generator, np
+from tests.context import tf, K, GeneratorPretrainingGenerator
 
+sess = tf.Session()
+K.set_session(sess)
 top = os.getcwd()
 
 class TestGenerator(unittest.TestCase):
@@ -9,33 +11,49 @@ class TestGenerator(unittest.TestCase):
             self.assertEqual(actual, expected, msg=msg)
 
     def test_generator(self):
-        B = 32
+        B = 4
         E = 2
         H = 3
-        gen = GeneratorPretrainingGenerator(
-            path=os.path.join(top, 'data', 'kokoro_parsed.txt'),
-            B=B,
-            shuffle=True)
-
-        model = Generator(gen.V, E, H)
-        lstm = model.get_layer('LSTM')
-        init_h = np.zeros([B, H])
-        init_c = np.zeros([B, H])
-
-
-        print('Model: Generator')
-        model.summary()
-
-        BOS = gen.BOS
+        V = 5
+        generator = Generator(sess, B, V, E, H)
+        generator.layers
+        BOS = 1
         x = [BOS] * B
         x = np.array(x).reshape(B, 1)
 
-        pred, h, c = model.predict([x, init_h, init_c])
-        prob = softmax(pred)
-        self.sub_test(pred.shape, (B, gen.V), msg='output shape test')
+        prob = generator.predict(x)
+
+        self.sub_test(prob.shape, (B, V), msg='output shape test')
         self.assertAlmostEqual(B, np.sum(prob), places=1, msg='softmax test')
 
         for i in range(100):
-            pred2, h, c = model.predict([x, h, c])
+            prob2 = generator.predict(x)
 
-        self.assertNotAlmostEqual(pred[0, 0], pred2[0, 0], places=10, msg='stateful test')
+        generator.reset_rnn_state()
+        prob3 = generator.predict(x)
+
+        self.assertNotAlmostEqual(prob[0, 0], prob2[0, 0], places=10, msg='stateful test')
+        self.assertAlmostEqual(prob[0, 0], prob3[0, 0], places=7, msg='stateful test')
+
+        action = np.array([1, 2, 3, 4])
+        reward = np.array([0.1, 0.2, 0.4, 0.8])
+        loss = generator.update(x, action, reward)
+        for i in range(500):
+            generator.reset_rnn_state()
+            loss = generator.update(x, action, reward)
+            if i % 100 == 0:
+                print(loss)
+                generator.reset_rnn_state()
+                prob = generator.predict(x)
+                print(prob[0])
+        self.sub_test(np.argmax(prob[0]), 4, 'RL optimization test')
+
+        g_data = GeneratorPretrainingGenerator(
+            os.path.join(top, 'data', 'kokoro_parsed.txt'),
+            B=B,
+            shuffle=False)
+        T = 40
+        num = 100
+        output_file = os.path.join(top, 'tests', 'data', 'save', 'generated.txt')
+        generator = Generator(sess, B, g_data.V, E, H)
+        generator.generate_samples(T, g_data, num, output_file)

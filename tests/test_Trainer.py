@@ -2,6 +2,8 @@ from tests.context import unittest, os, Agent, Environment, Discriminator, np
 from tests.context import DiscriminatorGenerator
 from tests.context import Trainer
 top = os.getcwd()
+# %load_ext autoreload
+# %autoreload 2
 
 class TestTrainer(unittest.TestCase):
     def sub_test(self, actual, expected, msg=None):
@@ -13,7 +15,7 @@ class TestTrainer(unittest.TestCase):
         g_B, g_E, g_H, g_T = 32, 4, 4, 40
         d_B, d_E = 32, 4
         d_filter_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20] # filter sizes for CNNs
-        d_num_filters = [1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1] # num of filters for CNNs
+        d_num_filters = [10, 20, 20, 20, 20, 10, 10, 10, 10, 10, 16, 16] # num of filters for CNNs
         d_dropout = 0.75
         n_sample=16
 
