@@ -13,22 +13,23 @@ class Trainer(object):
     '''
     Manage training
     '''
-    def __init__(self, g_B, g_T, g_E, g_H, d_B, d_E, d_filter_sizes, d_num_filters, d_dropout, n_sample):
-        self.g_B, self.g_T, self.g_E, self.g_H = g_B, g_T, g_E, g_H
-        self.d_B, self.d_E, self.d_filter_sizes = d_B, d_E, d_filter_sizes
+    def __init__(self, B, T, g_E, g_H, d_E, d_filter_sizes, d_num_filters, d_dropout, n_sample):
+        self.B, self.T = B, T
+        self.g_E, self.g_H = g_E, g_H
+        self.d_E, self.d_filter_sizes = d_E, d_filter_sizes
         self.d_num_filters, self.d_dropout = d_num_filters, d_dropout
         self.top = os.getcwd()
         self.path_pos = os.path.join(self.top, 'data', 'kokoro_parsed.txt')
         self.g_data = GeneratorPretrainingGenerator(
             self.path_pos,
-            B=g_B,
-            T=g_T,
+            B=B,
+            T=T,
             min_count=1)
         self.V = self.g_data.V
-        self.agent = Agent(sess, g_B, self.V, g_E, g_H)
-        self.g_beta = Agent(sess, g_B, self.V, g_E, g_H)
+        self.agent = Agent(sess, B, self.V, g_E, g_H)
+        self.Beta = Agent(sess, B, self.V, g_E, g_H)
         self.discriminator = Discriminator(self.V, d_E, d_filter_sizes, d_num_filters, d_dropout)
-        self.env = Environment(self.discriminator, self.g_data, self.g_beta, n_sample=n_sample)
+        self.env = Environment(self.discriminator, self.g_data, self.Beta, n_sample=n_sample)
 
         self.generator_pre = GeneratorPretraining(self.V, g_E, g_H)
 
@@ -62,13 +63,13 @@ class Trainer(object):
 
         self.path_neg = os.path.join(self.top, 'data', 'save', 'generated_sentences.txt')
         print('Start Generating sentences')
-        self.agent.generator.generate_samples(self.g_T, self.g_data, 10000,
+        self.agent.generator.generate_samples(self.T, self.g_data, 10000,
             self.path_neg)
 
         self.d_data = DiscriminatorGenerator(
             path_pos=self.path_pos,
             path_neg=self.path_neg,
-            B=self.d_B,
+            B=self.B,
             shuffle=True)
 
         d_adam = Adam()
@@ -97,16 +98,16 @@ class Trainer(object):
 
     def train(self, steps=10, g_steps=1, d_steps=1):
         for step in range(steps):
-            rewards = np.zeros([self.g_B, self.g_T-1])
+            rewards = np.zeros([self.B, self.T-1])
             self.agent.reset()
-            for t in range(self.g_T-1):
+            for t in range(self.T-1):
                 state = self.env.get_state()
                 action = self.agent.act(state, epsilon=0.1)
                 next_state, reward, is_episode_end, info = self.env.step(action)
                 self.agent.generator.update(state, action, reward)
-                rewards[:, t] = reward.reshape([self.g_B, ])
-                self.env.render(head=1)
+                rewards[:, t] = reward.reshape([self.B, ])
+                # self.env.render(head=1)
                 if is_episode_end:
-                    self.env.render(head=32)
+                    self.env.render(head=3)
                     print('Episode end')
                     break

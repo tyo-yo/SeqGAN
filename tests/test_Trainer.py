@@ -11,15 +11,16 @@ class TestTrainer(unittest.TestCase):
             self.assertEqual(actual, expected, msg=msg)
 
     def test_trainer(self):
-        g_B, g_E, g_H, g_T = 32, 4, 4, 40
-        d_B, d_E = 32, 4
+        B, T = 32, 40
+        g_E, g_H = 4, 4
+        d_E = 4
         d_filter_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20] # filter sizes for CNNs
         d_num_filters = [10, 20, 20, 20, 20, 10, 10, 10, 10, 10, 16, 16] # num of filters for CNNs
         d_dropout = 0.75
         n_sample=16
 
-        trainer = Trainer(g_B, g_T, g_E, g_H,
-            d_B, d_E, d_filter_sizes, d_num_filters, d_dropout, n_sample)
+        trainer = Trainer(B, T, g_E, g_H,
+            d_E, d_filter_sizes, d_num_filters, d_dropout, n_sample)
 
         g_path = os.path.join(top, 'tests', 'data', 'save', 'generator_pre.hdf5')
         d_path = os.path.join(top, 'tests', 'data', 'save', 'discriminator_pre.hdf5')
@@ -30,7 +31,7 @@ class TestTrainer(unittest.TestCase):
 
         x, y = trainer.d_data.next()
         pred = trainer.discriminator.predict(x)
-        for i in range(d_B):
+        for i in range(B):
             txt = [trainer.g_data.id2word[id] for id in x[i].tolist()]
             label = y[i]
             print('{}, {:.3f}: {}'.format(label, pred[i,0], ''.join(txt)))
