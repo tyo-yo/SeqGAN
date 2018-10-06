@@ -32,9 +32,9 @@ class Trainer(object):
             min_count=1)
         self.V = self.g_data.V
         self.agent = Agent(sess, B, self.V, g_E, g_H, g_lr)
-        self.Beta = Agent(sess, B, self.V, g_E, g_H, g_lr)
+        self.g_beta = Agent(sess, B, self.V, g_E, g_H, g_lr)
         self.discriminator = Discriminator(self.V, d_E, d_filter_sizes, d_num_filters, d_dropout)
-        self.env = Environment(self.discriminator, self.g_data, self.Beta, n_sample=n_sample)
+        self.env = Environment(self.discriminator, self.g_data, self.g_beta, n_sample=n_sample)
 
         self.generator_pre = GeneratorPretraining(self.V, g_E, g_H)
 
@@ -101,7 +101,10 @@ class Trainer(object):
                 self.agent.generator.layers[i].set_weights(w)
                 i += 1
 
-    def train(self, steps=10, g_steps=1, d_steps=1, d_epochs=1, verbose=True):
+    def train(self, steps=10, g_steps=1, d_steps=1, d_epochs=1,
+        g_weights_path='data/save/generator.pkl',
+        d_weights_path='data/save/discriminator.hdf5',
+        verbose=True):
         d_adam = Adam(self.d_lr)
         self.discriminator.compile(d_adam, 'binary_crossentropy')
 
@@ -110,6 +113,7 @@ class Trainer(object):
             for _ in range(g_steps):
                 rewards = np.zeros([self.B, self.T])
                 self.agent.reset()
+                self.env.reset()
                 for t in range(self.T):
                     state = self.env.get_state()
                     action = self.agent.act(state, epsilon=0.1)
@@ -119,27 +123,36 @@ class Trainer(object):
                     # self.env.render(head=1)
                     if is_episode_end:
                         if verbose:
-                            self.env.render(head=1)
                             print('Reward: {:.3f}, Episode end'.format(reward[0, 0]))
+                            self.env.render(head=1)
                         break
             # Discriminator training
-                for _ in range(d_steps):
-                    self.agent.generator.generate_samples(
-                        self.T,
-                        self.g_data,
-                        self.generate_samples,
-                        self.path_neg)
-                    self.d_data = DiscriminatorGenerator(
-                        path_pos=self.path_pos,
-                        path_neg=self.path_neg,
-                        B=self.B,
-                        shuffle=True)
-                    self.discriminator.fit_generator(
-                        self.d_data,
-                        steps_per_epoch=None,
-                        epochs=d_epochs)
+            for _ in range(d_steps):
+                self.agent.generator.generate_samples(
+                    self.T,
+                    self.g_data,
+                    self.generate_samples,
+                    self.path_neg)
+                self.d_data = DiscriminatorGenerator(
+                    path_pos=self.path_pos,
+                    path_neg=self.path_neg,
+                    B=self.B,
+                    shuffle=True)
+                self.discriminator.fit_generator(
+                    self.d_data,
+                    steps_per_epoch=None,
+                    epochs=d_epochs)
+
             # Update env.g_beta to agent
+            self.agent.save(g_weights_path)
+            self.g_beta.load(g_weights_path)
+
+            self.discriminator.save(d_weights_path)
 
     def save(self, g_path, d_path):
-        # self.agent.save(g_path)
+        self.agent.save(g_path)
         self.discriminator.save(d_path)
+
+    def load(self, g_path, d_path):
+        self.agent.load(g_path)
+        self.discriminator.load_weights(d_path)
