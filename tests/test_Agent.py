@@ -19,9 +19,9 @@ class TestAgent(unittest.TestCase):
 
         cur_state = state[:, :1]
         a = agent.act(cur_state)
-        self.sub_test(a.shape, (B, ), msg='Agent.act output shape test, input shape=(B, 1)')
+        self.sub_test(a.shape, (B, 1), msg='Agent.act output shape test, input shape=(B, 1)')
 
         cur_state = state[:, :3]
         agent.reset()
         a = agent.act(cur_state)
-        self.sub_test(a.shape, (B, ), msg='Agent.act output shape test, input_shape=(B, 3)')
+        self.sub_test(a.shape, (B, 1), msg='Agent.act output shape test, input_shape=(B, 3)')
