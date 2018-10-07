@@ -25,7 +25,8 @@ class Agent(object):
         self.V = V
         self.E = E
         self.H = H
-        sess.lr = lr
+        self.lr = lr
+        self.eps = 0.1
         self.generator = Generator(sess, B, V, E, H, lr)
 
     def act(self, state, epsilon=0, deterministic=False):
@@ -40,7 +41,7 @@ class Agent(object):
         word = state[:, -1].reshape([-1, 1])
         return self._act_on_word(word, epsilon=epsilon, deterministic=deterministic)
 
-    def _act_on_word(self, word, epsilon=0, deterministic=False):
+    def _act_on_word(self, word, epsilon=0, deterministic=False, PAD=0, EOS=2):
         '''
         # Arguments:
             word: numpy array, dtype=int, shape = (B, 1),
@@ -51,15 +52,20 @@ class Agent(object):
             action: numpy array, dtype=int, shape = (B, 1)
         '''
         action = None
+        is_PAD = word == PAD
+        is_EOS = word == EOS
+        is_end = is_PAD.astype(np.int) + is_EOS.astype(np.int)
+        is_end = 1 - is_end
+        is_end = is_end.reshape([self.B, 1])
         if np.random.rand() <= epsilon:
             action = np.random.randint(low=0, high=self.num_actions, size=(self.B, 1))
         elif not deterministic:
             probs = self.generator.predict(word)
-            action = self.generator.sampling_word(probs)
+            action = self.generator.sampling_word(probs).reshape([self.B, 1])
         else:
             probs = self.generator.predict(word) # (B, T)
-            action = np.argmax(probs, axis=-1).reshape([-1, 1])
-        return action
+            action = np.argmax(probs, axis=-1).reshape([self.B, 1])
+        return action * is_end
 
     def reset(self):
         self.generator.reset_rnn_state()
@@ -173,10 +179,10 @@ class Environment(object):
         for idx_sample in range(n_sample):
             Y = Y_base
             self.g_beta.generator.set_rnn_state(h, c)
-            y_t = self.g_beta.act(Y, epsilon=0)
+            y_t = self.g_beta.act(Y, epsilon=self.g_beta.eps)
             Y = self._append_state(y_t, state=Y)
             for tau in range(self.t+1, self.T):
-                y_tau = self.g_beta.act(Y, epsilon=0)
+                y_tau = self.g_beta.act(Y, epsilon=self.g_beta.eps)
                 Y = self._append_state(y_tau, state=Y)
             reward += self.discriminator.predict(Y) / n_sample
 
