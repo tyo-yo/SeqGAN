@@ -21,7 +21,7 @@ class Trainer(object):
         self.d_num_filters, self.d_dropout = d_num_filters, d_dropout
         self.generate_samples = generate_samples
         self.g_lr, self.d_lr = g_lr, d_lr
-        self.eps = 0.3
+        self.eps = 0.1
         self.top = os.getcwd()
         self.path_pos = os.path.join(self.top, 'data', 'kokoro_parsed.txt')
         self.path_neg = os.path.join(self.top, 'data', 'save', 'generated_sentences.txt')
@@ -30,6 +30,11 @@ class Trainer(object):
             B=B,
             T=T,
             min_count=1)
+        self.d_data = DiscriminatorGenerator(
+            path_pos=self.path_pos,
+            path_neg=self.path_neg,
+            B=self.B,
+            shuffle=True)
         self.V = self.g_data.V
         self.agent = Agent(sess, B, self.V, g_E, g_H, g_lr)
         self.g_beta = Agent(sess, B, self.V, g_E, g_H, g_lr)
@@ -85,13 +90,21 @@ class Trainer(object):
         self.discriminator.fit_generator(
             self.d_data,
             steps_per_epoch=None,
-            epochs=1)
+            epochs=d_epochs)
         self.discriminator.save(self.d_pre_path)
 
     def load_pre_train(self, g_pre_path, d_pre_path):
         self.generator_pre.load_weights(g_pre_path)
         self.reflect_pre_train()
         self.discriminator.load_weights(d_pre_path)
+
+    def load_pre_train_g(self, g_pre_path):
+        self.generator_pre.load_weights(g_pre_path)
+        self.reflect_pre_train()
+
+    def load_pre_train_d(self, d_pre_path):
+        self.discriminator.load_weights(d_pre_path)
+
 
     def reflect_pre_train(self):
         i = 0
@@ -117,11 +130,10 @@ class Trainer(object):
                 self.env.reset()
                 for t in range(self.T):
                     state = self.env.get_state()
-                    action = self.agent.act(state, epsilon=0.1)
+                    action = self.agent.act(state, epsilon=0.0)
                     next_state, reward, is_episode_end, info = self.env.step(action)
                     self.agent.generator.update(state, action, reward)
                     rewards[:, t] = reward.reshape([self.B, ])
-                    # self.env.render(head=1)
                     if is_episode_end:
                         if verbose:
                             print('Reward: {:.3f}, Episode end'.format(np.average(rewards)))
@@ -149,7 +161,7 @@ class Trainer(object):
             self.g_beta.load(g_weights_path)
 
             self.discriminator.save(d_weights_path)
-            self.eps =  max(self.eps*(1- float(step) / steps * 2), 1e-4)
+            self.eps = max(self.eps*(1- float(step) / steps * 4), 1e-4)
 
     def save(self, g_path, d_path):
         self.agent.save(g_path)
@@ -157,5 +169,13 @@ class Trainer(object):
 
     def load(self, g_path, d_path):
         self.agent.load(g_path)
-        self.g_beta.load(g_weights_path)
+        self.g_beta.load(g_path)
         self.discriminator.load_weights(d_path)
+
+    def test(self):
+        x, y = self.d_data.next()
+        pred = self.discriminator.predict(x)
+        for i in range(self.B):
+            txt = [self.g_data.id2word[id] for id in x[i].tolist()]
+            label = y[i]
+            print('{}, {:.3f}: {}'.format(label, pred[i,0], ''.join(txt)))
