@@ -9,8 +9,9 @@ Look at the [paper](https://arxiv.org/abs/1609.05473) for detail.
 In this example, disciminator model differs from paper because keras don't support masking in Conv1D, so disciminator uses LSTM here.
 
 ## Usage
+
 [main.ipynb](https://github.com/tyo-yo/SeqGAN/blob/master/main.ipynb) shows usage and result.
--
+
 - ## Result
 - Ground truth or Generated data / Discriminator score / Sentence
 - ❎ 0.001: 私は思いつまりもなくなって、そぞろ、話しかけの内はがらんとして辛かったからです。
