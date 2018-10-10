@@ -11,13 +11,12 @@ class TestTrainer(unittest.TestCase):
         B, T = 32, 40
         g_E, g_H = 4, 4
         d_E = 4
-        d_filter_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20] # filter sizes for CNNs
-        d_num_filters = [10, 20, 20, 20, 20, 10, 10, 10, 10, 10, 16, 16] # num of filters for CNNs
+        d_H = 64
         d_dropout = 0.75
         n_sample=16
 
         trainer = Trainer(B, T, g_E, g_H,
-            d_E, d_filter_sizes, d_num_filters, d_dropout, n_sample)
+            d_E, d_H, d_dropout, n_sample)
 
         g_path = os.path.join(top, 'tests', 'data', 'save', 'generator_pre.hdf5')
         d_path = os.path.join(top, 'tests', 'data', 'save', 'discriminator_pre.hdf5')

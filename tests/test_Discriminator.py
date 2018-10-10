@@ -1,4 +1,4 @@
-from .context import unittest, os, DiscriminatorGenerator, Discriminator
+from .context import unittest, os, DiscriminatorGenerator, DiscriminatorConv
 
 top = os.getcwd()
 
@@ -15,7 +15,7 @@ class TestDiscriminator(unittest.TestCase):
             path_neg=os.path.join(top, 'tests', 'data', 'sample_generated.txt'),
             B=32,
             shuffle=True)
-        model = Discriminator(gen.V, 3, filter_sizes, num_filters, dropout=0.75)
+        model = DiscriminatorConv(gen.V, 3, filter_sizes, num_filters, dropout=0.75)
         model.compile('adam','binary_crossentropy')
         print('Model: Discriminator')
         model.summary()

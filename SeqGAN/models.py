@@ -259,9 +259,33 @@ class Generator():
         for layer, w in zip(self.layers, weights):
             layer.set_weights(w)
 
-def Discriminator(V, E, filter_sizes, num_filters, dropout):
+def Discriminator(V, E, H=64, dropout=0.1):
     '''
     Disciriminator model.
+    # Arguments:
+        V: int, Vocabrary size
+        E: int, Embedding size
+        H: int, LSTM hidden size
+        dropout: float
+    # Returns:
+        discriminator: keras model
+            input: word ids, shape = (B, T)
+            output: probability of true data or not, shape = (B, 1)
+    '''
+    input = Input(shape=(None,), dtype='int32', name='Input')   # (B, T)
+    out = Embedding(V, E, mask_zero=True, name='Embedding')(input)  # (B, T, E)
+    out = LSTM(H)(out)
+    out = Highway(out, num_layers=1)
+    out = Dropout(dropout, name='Dropout')(out)
+    out = Dense(1, activation='sigmoid', name='FC')(out)
+
+    discriminator = Model(input, out)
+    return discriminator
+
+def DiscriminatorConv(V, E, filter_sizes, num_filters, dropout):
+    '''
+    Another Discriminator model, currently unused because keras don't support
+    masking for Conv1D and it does huge influence on training.
     # Arguments:
         V: int, Vocabrary size
         E: int, Embedding size
@@ -274,37 +298,14 @@ def Discriminator(V, E, filter_sizes, num_filters, dropout):
             output: probability of true data or not, shape = (B, 1)
     '''
     input = Input(shape=(None,), dtype='int32', name='Input')   # (B, T)
-    out = Embedding(V, E, mask_zero=True, name='Embedding')(input)  # (B, T, E)
-    out = LSTM(64)(out)
+    out = Embedding(V, E, name='Embedding')(input)  # (B, T, E)
+    out = VariousConv1D(out, filter_sizes, num_filters)
     out = Highway(out, num_layers=1)
     out = Dropout(dropout, name='Dropout')(out)
     out = Dense(1, activation='sigmoid', name='FC')(out)
 
     discriminator = Model(input, out)
     return discriminator
-# def Discriminator(V, E, filter_sizes, num_filters, dropout):
-#     '''
-#     Disciriminator model.
-#     # Arguments:
-#         V: int, Vocabrary size
-#         E: int, Embedding size
-#         filter_sizes: list of int, list of each Conv1D filter sizes
-#         num_filters: list of int, list of each Conv1D num of filters
-#         dropout: float
-#     # Returns:
-#         discriminator: keras model
-#             input: word ids, shape = (B, T)
-#             output: probability of true data or not, shape = (B, 1)
-#     '''
-#     input = Input(shape=(None,), dtype='int32', name='Input')   # (B, T)
-#     out = Embedding(V, E, name='Embedding')(input)  # (B, T, E)
-#     out = VariousConv1D(out, filter_sizes, num_filters)
-#     out = Highway(out, num_layers=1)
-#     out = Dropout(dropout, name='Dropout')(out)
-#     out = Dense(1, activation='sigmoid', name='FC')(out)
-#
-#     discriminator = Model(input, out)
-#     return discriminator
 
 def VariousConv1D(x, filter_sizes, num_filters, name_prefix=''):
     '''

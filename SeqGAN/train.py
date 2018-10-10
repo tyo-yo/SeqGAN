@@ -13,15 +13,16 @@ class Trainer(object):
     '''
     Manage training
     '''
-    def __init__(self, B, T, g_E, g_H, d_E, d_filter_sizes, d_num_filters,
-        d_dropout, g_lr=1e-3, d_lr=1e-3, n_sample=16, generate_samples=10000):
+    def __init__(self, B, T, g_E, g_H, d_E, d_H, d_dropout, g_lr=1e-3, d_lr=1e-3,
+        n_sample=16, generate_samples=10000, init_eps=0.1):
         self.B, self.T = B, T
         self.g_E, self.g_H = g_E, g_H
-        self.d_E, self.d_filter_sizes = d_E, d_filter_sizes
-        self.d_num_filters, self.d_dropout = d_num_filters, d_dropout
+        self.d_E, self.d_H = d_E, d_H
+        self.d_dropout = d_dropout
         self.generate_samples = generate_samples
         self.g_lr, self.d_lr = g_lr, d_lr
-        self.eps = 0.1
+        self.eps = init_eps
+        self.init_eps = init_eps
         self.top = os.getcwd()
         self.path_pos = os.path.join(self.top, 'data', 'kokoro_parsed.txt')
         self.path_neg = os.path.join(self.top, 'data', 'save', 'generated_sentences.txt')
@@ -30,15 +31,16 @@ class Trainer(object):
             B=B,
             T=T,
             min_count=1)
-        self.d_data = DiscriminatorGenerator(
-            path_pos=self.path_pos,
-            path_neg=self.path_neg,
-            B=self.B,
-            shuffle=True)
+        if os.path.exists(self.path_neg):
+            self.d_data = DiscriminatorGenerator(
+                path_pos=self.path_pos,
+                path_neg=self.path_neg,
+                B=self.B,
+                shuffle=True)
         self.V = self.g_data.V
         self.agent = Agent(sess, B, self.V, g_E, g_H, g_lr)
         self.g_beta = Agent(sess, B, self.V, g_E, g_H, g_lr)
-        self.discriminator = Discriminator(self.V, d_E, d_filter_sizes, d_num_filters, d_dropout)
+        self.discriminator = Discriminator(self.V, d_E, d_H, d_dropout)
         self.env = Environment(self.discriminator, self.g_data, self.g_beta, n_sample=n_sample)
 
         self.generator_pre = GeneratorPretraining(self.V, g_E, g_H)
@@ -122,6 +124,7 @@ class Trainer(object):
         head=1):
         d_adam = Adam(self.d_lr)
         self.discriminator.compile(d_adam, 'binary_crossentropy')
+        self.eps = self.init_eps
         for step in range(steps):
             # Generator training
             for _ in range(g_steps):

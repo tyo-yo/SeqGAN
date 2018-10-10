@@ -1,4 +1,4 @@
-from tests.context import unittest, os, Agent, Environment, Discriminator, np
+from tests.context import unittest, os, Agent, Environment, DiscriminatorConv, np
 from tests.context import DiscriminatorGenerator, tf
 sess = tf.Session()
 from tests.context import K
@@ -18,7 +18,7 @@ class TestEnvironment(unittest.TestCase):
 
         agent = Agent(sess, B, V, E, H)
         g_beta = Agent(sess, B, V, E, H)
-        discriminator = Discriminator(V, E, filter_sizes, num_filters, 0.7)
+        discriminator = DiscriminatorConv(V, E, filter_sizes, num_filters, 0.7)
         gen = DiscriminatorGenerator(
             path_pos=os.path.join(top, 'data', 'kokoro_parsed.txt'),
             path_neg=os.path.join(top, 'tests', 'data', 'sample_generated.txt'),
