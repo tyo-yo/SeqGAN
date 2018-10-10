@@ -30,7 +30,6 @@ class Vocab:
 
 def load_data(file_path):
     '''
-    テキストファイルからデータを読み込む関数
     # Arguments:
         file_path: str
     # Returns:
@@ -45,7 +44,6 @@ def load_data(file_path):
 
 def sentence_to_ids(vocab, sentence, UNK=3):
     '''
-    単語(str)のリストをID(int)のリストに変換する関数
     # Arguments:
         vocab: SeqGAN.utils.Vocab
         sentence: list of str
@@ -58,19 +56,18 @@ def sentence_to_ids(vocab, sentence, UNK=3):
 
 def pad_seq(seq, max_length, PAD=0):
     """
-    Paddingを行う関数
-    :param seq: list of int, 単語のインデックスのリスト
-    :param max_length: int, バッチ内の系列の最大長
-    :return seq: list of int, 単語のインデックスのリスト
+    :param seq: list of int,
+    :param max_length: int,
+    :return seq: list of int,
     """
     seq += [PAD for i in range(max_length - len(seq))]
     return seq
 
 def print_ids(ids, vocab, verbose=True, exclude_mark=True, PAD=0, BOS=1, EOS=2):
     '''
-    :param ids: list of int, idのリスト
-    :param vocab: idとwordを紐付けるVocab
-    :param verbose(optional): Trueの場合sentenceをprintする。
+    :param ids: list of int,
+    :param vocab:
+    :param verbose(optional): 
     :return sentence: list of str
     '''
     sentence = []
